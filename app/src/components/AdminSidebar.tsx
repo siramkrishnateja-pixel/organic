@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { LayoutDashboard, ShoppingBag, RefreshCw, Package, Boxes, Users, TrendingUp, Settings, ChevronRight, LogOut } from 'lucide-react';
+import LoginModal from '@/components/LoginModal';
 
 const adminLinks = [
   { href: '/admin',                label: 'Dashboard',     icon: LayoutDashboard },
@@ -16,6 +18,7 @@ const adminLinks = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {

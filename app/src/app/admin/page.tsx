@@ -1,19 +1,51 @@
 'use client';
-import { useState } from 'react';
-import { dashboardKPIs, ordersChartDataThisWeek, ordersChartDataLastWeek, revenueByCategory, lowStockAlerts, expiringBatches, monthlyPnL } from '@/lib/mock-data/dashboard';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { ShoppingBag, RefreshCw, TrendingUp, Users, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-
-const kpiCards = [
-  { label: "Today's Orders", value: dashboardKPIs.todayOrders, change: dashboardKPIs.todayOrdersChange, icon: ShoppingBag, color: '#2D6A4F', href: '/admin/orders' },
-  { label: 'Active Subscriptions', value: dashboardKPIs.activeSubscriptions, change: dashboardKPIs.activeSubscriptionsChange, icon: RefreshCw, color: '#3B82F6', href: '/admin/subscriptions' },
-  { label: 'Revenue (MTD)', value: `₹${(dashboardKPIs.revenueMonth/1000).toFixed(1)}K`, change: dashboardKPIs.revenueMonthChange, icon: TrendingUp, color: '#F4A261', href: '/admin/finance' },
-  { label: 'New Customers', value: dashboardKPIs.newCustomers, change: dashboardKPIs.newCustomersChange, icon: Users, color: '#52B788', href: '/admin/customers' },
-];
+import { fetchFromAPI } from '@/lib/api-client';
 
 export default function AdminDashboard() {
   const [selectedWeek, setSelectedWeek] = useState('this');
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        const data = await fetchFromAPI('/admin/dashboard');
+        setDashboardData(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center pt-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error || !dashboardData) {
+    return <div className="text-red-500 pt-20">Failed to load dashboard: {error}</div>;
+  }
+
+  const { dashboardKPIs, ordersChartDataThisWeek, ordersChartDataLastWeek, revenueByCategory, lowStockAlerts, expiringBatches, monthlyPnL } = dashboardData;
+
+  const kpiCards = [
+    { label: "Today's Orders", value: dashboardKPIs.todayOrders, change: dashboardKPIs.todayOrdersChange, icon: ShoppingBag, color: '#2D6A4F', href: '/admin/orders' },
+    { label: 'Active Subscriptions', value: dashboardKPIs.activeSubscriptions, change: dashboardKPIs.activeSubscriptionsChange, icon: RefreshCw, color: '#3B82F6', href: '/admin/subscriptions' },
+    { label: 'Revenue (MTD)', value: `₹${(dashboardKPIs.revenueMonth/1000).toFixed(1)}K`, change: dashboardKPIs.revenueMonthChange, icon: TrendingUp, color: '#F4A261', href: '/admin/finance' },
+    { label: 'New Customers', value: dashboardKPIs.newCustomers, change: dashboardKPIs.newCustomersChange, icon: Users, color: '#52B788', href: '/admin/customers' },
+  ];
+
   const currentChartData = selectedWeek === 'this' ? ordersChartDataThisWeek : ordersChartDataLastWeek;
 
   return (

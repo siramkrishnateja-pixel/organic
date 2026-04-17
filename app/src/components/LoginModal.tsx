@@ -15,20 +15,65 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
   const [inputValue, setInputValue] = useState('');
   const [otpValue, setOtpValue] = useState('');
 
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue) setStep('otp');
+    setErrorMsg('');
+    if (!inputValue) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/supabase/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: inputValue, method: methodTab })
+      });
+      const data = await res.json();
+      if (data.status === 'error') throw new Error(data.message);
+      setStep('otp');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otpValue) {
+    setErrorMsg('');
+    if (!otpValue) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/api/supabase/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          identifier: inputValue, 
+          otp: otpValue, 
+          requested_role: roleTab 
+        })
+      });
+      const data = await res.json();
+      
+      if (data.status === 'error') {
+        throw new Error(data.message);
+      }
+      
+      // Success! The python backend verified the role.
       if (typeof window !== 'undefined') {
-        localStorage.setItem('organic_user_role', roleTab);
+        localStorage.setItem('organic_user_role', data.role);
+        localStorage.setItem('organic_user_id', data.identifier);
         window.location.reload();
       }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 

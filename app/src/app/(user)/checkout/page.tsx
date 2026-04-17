@@ -29,12 +29,38 @@ export default function CheckoutPage() {
     setTimeout(() => setPaymentState('success'), 1800);
   };
 
-  const handleDummyPay = () => {
+  const handleDummyPay = async () => {
     setPaymentState('processing');
-    setTimeout(() => {
+    try {
+      if (simulateFailure) {
+        setTimeout(() => {
+          setShowPayModal(false);
+          setPaymentState('failed');
+        }, 1500);
+        return;
+      }
+      
+      const response = await fetch('http://localhost:8000/api/payment/razorpay-dummy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 575,
+          receipt: "order_rcptid_11",
+        })
+      });
+      
+      if (!response.ok) throw new Error('Payment network error');
+      
+      const data = await response.json();
+      console.log('Response from FastAPI Python Backend:', data);
+      
       setShowPayModal(false);
-      setPaymentState(simulateFailure ? 'failed' : 'success');
-    }, 2000);
+      setPaymentState('success');
+    } catch (error) {
+      console.error(error);
+      setShowPayModal(false);
+      setPaymentState('failed');
+    }
   };
 
   if (paymentState === 'success') {

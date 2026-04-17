@@ -1,9 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { orders } from '@/lib/mock-data/orders';
-import { Eye } from 'lucide-react';
-
-const myOrders = orders.filter(o => o.userId === 'u1');
+import { useState, useEffect } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
+import { Eye, PackageOpen } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   pending: 'badge-warning', confirmed: 'badge-info', out_for_delivery: 'badge-info',
@@ -13,8 +11,43 @@ const statusColors: Record<string, string> = {
 export default function OrdersPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
-  const filtered = filter === 'all' ? myOrders : myOrders.filter(o => o.status === filter);
-  const selectedOrder = orders.find(o => o.id === selected);
+  const [myOrders, setMyOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        const userId = localStorage.getItem('organic_user_id') || 'guest';
+        const data = await fetchFromAPI(`/user/${userId}/orders`);
+        setMyOrders(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadOrders();
+  }, []);
+
+  const filtered = filter === 'all' ? myOrders : myOrders.filter((o: any) => o.status === filter);
+  const selectedOrder = myOrders.find((o: any) => o.id === selected);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <p className="text-red-500 text-center">Failed to load orders: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -42,7 +75,7 @@ export default function OrdersPage() {
                 </div>
                 <p className="text-sm" style={{ color: '#6B7280' }}>{order.createdAt.split('T')[0]} · {order.deliverySlot} · ₹{order.totalAmount}</p>
                 <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                  {order.items.map(i => `${i.name} ×${i.quantity}`).join(', ')}
+                  {order.items?.map((i: any) => `${i.name} ×${i.quantity}`).join(', ')}
                 </p>
               </div>
               <button id={`view-order-${order.id}`} onClick={() => setSelected(order.id)} className="btn btn-outline btn-sm flex items-center gap-1">
@@ -75,7 +108,7 @@ export default function OrdersPage() {
             </div>
             <span className={`badge ${statusColors[selectedOrder.status]}`}>{selectedOrder.status.replace(/_/g, ' ')}</span>
             <div className="mt-4 space-y-3">
-              {selectedOrder.items.map(item => (
+              {selectedOrder.items?.map((item: any) => (
                 <div key={item.productId} className="flex justify-between text-sm">
                   <span style={{ color: '#6B7280' }}>{item.name} ×{item.quantity}</span>
                   <span style={{ fontWeight: 600 }}>₹{item.subtotal}</span>
