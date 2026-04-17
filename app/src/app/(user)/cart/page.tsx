@@ -1,9 +1,10 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { products } from '@/lib/mock-data/products';
 import { Minus, Plus, Trash2, Tag, Wallet, ArrowRight } from 'lucide-react';
+import LoginModal from '@/components/LoginModal';
 
 const initialCart = [
   { product: products[0], qty: 2 },
@@ -15,6 +16,17 @@ export default function CartPage() {
   const [cart, setCart] = useState(initialCart);
   const [coupon, setCoupon] = useState('');
   const [couponApplied, setCouponApplied] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('organic_user_role');
+      if (role === 'customer' || role === 'admin') {
+        setIsLoggedIn(true);
+      }
+    }
+  }, []);
 
   const updateQty = (id: string, delta: number) => setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
   const remove = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
@@ -105,14 +117,21 @@ export default function CartPage() {
                 <span style={{ color: '#2D6A4F' }}>₹{total}</span>
               </div>
 
-              <Link href="/checkout" id="checkout-btn" className="btn btn-primary btn-lg w-full flex justify-center">
-                Proceed to Checkout <ArrowRight size={18} />
-              </Link>
+              {isLoggedIn ? (
+                <Link href="/checkout" id="checkout-btn" className="btn btn-primary btn-lg w-full flex justify-center">
+                  Proceed to Checkout <ArrowRight size={18} />
+                </Link>
+              ) : (
+                <button id="checkout-login-btn" onClick={() => setIsLoginOpen(true)} className="btn btn-primary btn-lg w-full flex justify-center">
+                  Login to Checkout <ArrowRight size={18} />
+                </button>
+              )}
               <Link href="/products" className="btn btn-ghost w-full text-center mt-2 text-sm">Continue Shopping</Link>
             </div>
           </div>
         </div>
       )}
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} defaultRole="user" />
     </div>
   );
 }

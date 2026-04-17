@@ -170,12 +170,28 @@ export default function HomePage() {
 
       {/* CTA Banner */}
       <section className="py-16 max-w-7xl mx-auto px-4">
-        <div className="rounded-3xl p-10 text-center" style={{ background: 'linear-gradient(135deg,#F4A261,#E9C46A)' }}>
+        <div className="rounded-3xl p-10 text-center shadow-md mb-8" style={{ background: 'linear-gradient(135deg,#F4A261,#E9C46A)' }}>
           <h2 className="text-3xl font-bold text-white mb-3">Subscribe & Save Up to 15%</h2>
           <p className="text-white mb-6" style={{ opacity: 0.9 }}>Daily or alternate-day delivery. Pause anytime. No lock-ins.</p>
-          <Link href="/subscriptions" className="btn btn-lg" style={{ background: 'white', color: '#2D6A4F' }}>
+          <Link href="/subscriptions" className="btn btn-lg shadow-sm" style={{ background: 'white', color: '#2D6A4F' }}>
             Start Subscription <ArrowRight size={18} />
           </Link>
+        </div>
+
+        {/* Promo Coupon Banner */}
+        <div className="rounded-3xl p-8 text-center" style={{ background: 'rgba(82, 183, 136, 0.1)', border: '2px dashed #52B788' }}>
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="bg-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-green-700 shadow-sm">
+              Exclusive Offer
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold" style={{ color: '#1B2D2A' }}>
+              Special Rewards for You
+            </h2>
+            <p className="max-w-2xl mx-auto" style={{ color: '#6B7280' }}>
+              We love treating our community! Use code <strong className="text-green-700">WELCOME5</strong> on your 1st purchase for a <strong>5% flat discount</strong>. 
+              As a gesture of our appreciation, after your 29th purchase, you will automatically unlock another <strong>5% lifetime discount</strong> on all future orders!
+            </p>
+          </div>
         </div>
       </section>
     </div>

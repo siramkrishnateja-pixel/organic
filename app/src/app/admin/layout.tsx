@@ -1,4 +1,5 @@
 import PlatformTabs from '@/components/PlatformTabs';
+import AdminGuard from '@/components/AdminGuard';
 import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -8,10 +9,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <PlatformTabs />
       </div>
       <div className="flex flex-1 overflow-hidden relative">
-        <AdminSidebar />
-        <main className="flex-1 p-6 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#0F1923' }}>
-          {children}
-        </main>
+        <AdminGuard>
+          <AdminSidebar />
+          <main className="flex-1 p-6 overflow-y-auto overflow-x-hidden min-w-0" style={{ background: '#0F1923' }}>
+            {children}
+          </main>
+        </AdminGuard>
       </div>
     </div>
   );

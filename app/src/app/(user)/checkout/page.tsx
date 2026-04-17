@@ -1,16 +1,27 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Clock, Wallet, CreditCard, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const slots = ['6AM - 9AM', '9AM - 12PM', '12PM - 3PM', '3PM - 6PM'];
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'dummy'>('wallet');
   const [selectedSlot, setSelectedSlot] = useState(slots[0]);
   const [showPayModal, setShowPayModal] = useState(false);
   const [simulateFailure, setSimulateFailure] = useState(false);
   const [paymentState, setPaymentState] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const role = localStorage.getItem('organic_user_role');
+      if (role !== 'customer' && role !== 'admin') {
+        router.push('/cart');
+      }
+    }
+  }, [router]);
 
   const handlePlaceOrder = () => {
     if (paymentMethod === 'dummy') { setShowPayModal(true); return; }
