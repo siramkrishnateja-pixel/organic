@@ -15,7 +15,8 @@ const initialCart = [
 export default function CartPage() {
   const [cart, setCart] = useState(initialCart);
   const [coupon, setCoupon] = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discountPct: number} | null>(null);
+  const [showSubModal, setShowSubModal] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -28,10 +29,22 @@ export default function CartPage() {
     }
   }, []);
 
+  const handleApplyCoupon = () => {
+    if (coupon === 'WELCOME5') {
+       setAppliedCoupon({code: 'WELCOME5', discountPct: 0.05});
+       setShowSubModal(true);
+    } else if (coupon === 'ORGANIC10') {
+       setAppliedCoupon({code: 'ORGANIC10', discountPct: 0.10});
+       setShowSubModal(true);
+    } else {
+       alert("Invalid or expired coupon code");
+    }
+  };
+
   const updateQty = (id: string, delta: number) => setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
   const remove = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
   const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
-  const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
+  const discount = appliedCoupon ? Math.round(subtotal * appliedCoupon.discountPct) : 0;
   const deliveryFee = subtotal > 500 ? 0 : 40;
   const total = subtotal - discount + deliveryFee;
 
@@ -91,15 +104,15 @@ export default function CartPage() {
                   <Tag size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#9CA3AF' }} />
                   <input id="coupon-input" className="input-field pl-8 text-sm py-2" placeholder="Coupon code" value={coupon} onChange={e => setCoupon(e.target.value.toUpperCase())} />
                 </div>
-                <button id="apply-coupon-btn" onClick={() => { if (coupon === 'ORGANIC10') setCouponApplied(true); }} className="btn btn-outline btn-sm">Apply</button>
+                <button id="apply-coupon-btn" onClick={handleApplyCoupon} className="btn btn-outline btn-sm">Apply</button>
               </div>
-              {couponApplied && <p className="text-xs mb-3" style={{ color: '#52B788' }}>✓ ORGANIC10 applied — 10% off!</p>}
+              {appliedCoupon && <p className="text-xs mb-3" style={{ color: '#52B788' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.discountPct * 100}% off!</p>}
 
               {/* Price breakdown */}
               <div className="space-y-3 border-t pt-4 mb-4" style={{ borderColor: '#F3F4F6' }}>
                 {[
                   ['Subtotal', `₹${subtotal}`],
-                  ['Discount', couponApplied ? `-₹${discount}` : '—'],
+                  ['Discount', appliedCoupon ? `-₹${discount}` : '—'],
                   ['Delivery', deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between text-sm">
@@ -131,6 +144,34 @@ export default function CartPage() {
           </div>
         </div>
       )}
+      
+      {/* Subscription Upsell Modal */}
+      {showSubModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm mx-4 text-center animate-fadeInUp">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🎉</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-2" style={{ color: '#1B2D2A' }}>You saved ₹{discount}!</h3>
+            <p className="mb-6 text-sm leading-relaxed" style={{ color: '#6B7280' }}>
+              Want to maximize your savings? Become a subscriber to lock in a <strong>flat 15% discount</strong> on all daily deliveries! No lock-ins, pause anytime.
+            </p>
+            <div className="space-y-3">
+              <Link href="/subscriptions" className="btn btn-primary w-full flex justify-center py-3">
+                Explore Subscriptions
+              </Link>
+              <button 
+                onClick={() => setShowSubModal(false)} 
+                className="w-full text-sm font-semibold transition-colors mt-2"
+                style={{ color: '#6B7280' }}
+              >
+                No thanks, continue to checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} defaultRole="user" />
     </div>
   );
