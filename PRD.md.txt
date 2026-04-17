@@ -1,0 +1,357 @@
+🥛 Organic Dairy & Farm Products Platform
+Product Requirements Document (PRD)
+[Updated: April 2026 — DB & Payment decisions locked]
+________________________________________
+1. 📌 Product Overview
+A subscription-first e-commerce platform for:
+•	Organic dairy products (milk, ghee, curd, paneer)
+•	Organic vegetables & farm produce
+•	Organic oils and other natural products
+•	Future: grocery add-ons
+Inspiration:
+•	Catalog-driven platforms (like Indira Foods)
+•	Fresh delivery models (like Little India)
+Key Differentiators:
+•	Subscription-first model (core)
+•	Organic trust & transparency
+•	Integrated operations (inventory + production + delivery)
+•	Admin-driven business intelligence (P&L, analytics)
+________________________________________
+2. 🎯 Goals
+•	Enable daily/recurring delivery of milk & organic products
+•	Reduce waste via demand prediction
+•	Build trust through organic transparency
+•	Provide complete admin control over operations & finance
+________________________________________
+3. 👥 User Roles
+3.1 Customer (User)
+•	Browse and purchase products
+•	Subscribe to recurring deliveries
+•	Manage orders and deliveries
+3.2 Admin
+•	Manage entire business operations
+•	Monitor orders, inventory, subscriptions
+•	Analyze revenue, costs, and profit (P&L dashboard)
+3.3 Delivery Agent (Phase 2)
+•	Execute deliveries
+•	Update delivery status
+________________________________________
+4. 🔐 Entry Experience (Two-Platform System)
+4.1 Entry Navigation (UI)
+Landing page provides two clear entry points:
+•	🛒 Shop / User Login
+•	🛠️ Admin Login
+These represent two separate application experiences, not just roles.
+________________________________________
+5. 👤 USER PLATFORM (Customer App)
+5.1 Authentication
+•	Mobile OTP login (primary)
+•	Email login (optional)
+________________________________________
+5.2 Product Discovery
+Categories:
+•	Milk & Dairy
+•	Organic Vegetables
+•	Organic Oils
+•	Farm Products
+Features:
+•	Search & filters
+•	Product details
+•	Batch/farm info
+________________________________________
+5.3 Shopping Flow
+•	Add to cart
+•	Modify quantity
+•	Checkout
+________________________________________
+5.4 Subscription Engine ⭐
+•	Daily / alternate-day / custom schedule
+•	Pause (vacation mode)
+•	Skip delivery
+•	Modify quantity
+•	Delivery calendar
+________________________________________
+5.5 Payments
+•	Wallet system
+•	Auto deduction for subscriptions
+•	Dummy Payment Gateway (Phase 1 / Testing mode)
+		o	Simulates payment success / failure without real money
+		o	No external gateway credentials required
+		o	Instantly marks payment as "paid" with a mock transaction ID
+•	Real payment gateway (Phase 2 — post-testing, TBD: Razorpay/Stripe)
+________________________________________
+5.6 Orders & Tracking
+•	Place order
+•	Track status
+•	Cancel / refund
+________________________________________
+5.7 Notifications
+•	SMS / Email / Push (TBD)
+•	Order updates
+•	Delivery alerts
+•	Subscription reminders
+________________________________________
+5.8 Trust Layer
+•	Farm information
+•	Batch traceability
+•	Organic certifications
+________________________________________
+5.9 User Pages
+•	Home
+•	Products Listing
+•	Product Details
+•	Cart
+•	Checkout
+•	Subscriptions
+•	Orders
+•	Profile
+________________________________________
+6. 🛠️ ADMIN PLATFORM (Backoffice System)
+6.1 Authentication
+•	Secure admin login
+•	Role-based access
+________________________________________
+6.2 Business Dashboard ⭐
+•	Total orders (daily/monthly/custom range)
+•	Revenue overview
+•	Active subscriptions
+•	New customers
+•	Low stock alerts
+________________________________________
+6.3 Profit & Loss (P&L Dashboard) ⭐
+Revenue:
+•	Total sales
+•	Subscription vs one-time revenue
+Costs:
+•	Production cost
+•	Logistics cost
+•	Operational expenses
+Profit:
+•	Net profit
+•	Product-wise margins
+Filters:
+•	Date range
+•	Monthly view
+•	Category-wise
+________________________________________
+6.4 Orders Management
+•	View all orders
+•	Filter (today / month / custom)
+•	Status updates (pending / delivered / failed)
+________________________________________
+6.5 Subscription Management
+•	View active subscriptions
+•	Modify plans
+•	Pause/resume for users
+________________________________________
+6.6 Inventory & Production ⭐
+•	Daily production entry
+•	Stock tracking
+•	Expiry alerts
+•	Wastage tracking
+________________________________________
+6.7 Product Management
+•	Add / Edit / Delete products
+•	Manage categories
+•	Pricing and stock
+________________________________________
+6.8 Customer Management
+•	View users
+•	Order history
+•	Subscription data
+________________________________________
+6.9 Promotions
+•	Coupons
+•	Referral programs
+________________________________________
+6.10 Admin Pages
+•	Dashboard
+•	Orders
+•	Subscriptions
+•	Inventory
+•	Products
+•	Customers
+•	Finance (P&L)
+•	Settings
+________________________________________
+7. 🚚 DELIVERY MODULE (PHASE 2)
+•	Route planning
+•	Assign delivery agents
+•	Delivery status updates
+•	Failed delivery handling
+________________________________________
+8. 📈 DEMAND PREDICTION (FUTURE)
+Inputs:
+•	Active subscriptions
+•	Historical orders
+Outputs:
+•	Daily production planning
+•	Inventory optimization
+________________________________________
+9. ⚠️ KEY BUSINESS LOGIC
+Perishability
+•	Expiry tracking
+•	Batch-based inventory
+Delivery Failures
+•	Retry / reschedule
+•	Wallet refund
+Subscription Complexity
+•	Real-time updates
+•	Flexible scheduling
+________________________________________
+10. 🧱 TECH STACK (CONFIRMED)
+Frontend
+•	Next.js (React)
+•	Tailwind CSS
+Backend
+•	Node.js (API layer via Next.js API Routes)
+•	REST API (using Supabase Connect API / PostgREST)
+________________________________________
+Database ✅ DECIDED
+•	Provider: Supabase (PostgreSQL)
+•	Connection Method: Supabase Connect API (PostgREST auto-generated REST)
+•	All DB access via Data Access Layer (DAL) — no direct DB calls from UI
+•	DAL talks to Supabase via supabase-js → PostgREST REST API → PostgreSQL
+________________________________________
+Authentication ✅ DECIDED
+•	Provider: Supabase Auth
+•	Method: Phone OTP (primary), Email (optional)
+________________________________________
+Storage ✅ DECIDED
+•	Provider: Supabase Storage (S3-compatible)
+________________________________________
+Payments
+•	Phase 1 (Testing): Dummy Payment Gateway (no real money, simulated flow)
+•	Phase 2 (Production): Real gateway — TBD (Razorpay recommended for India/UPI)
+________________________________________
+Notifications
+•	Phase 1: SMS OTP via Supabase+Twilio; In-app via notifications table; Email via Resend
+•	Phase 2: Push notifications (FCM), WhatsApp (Twilio)
+________________________________________
+11. 🧠 DATA ACCESS STRATEGY (DAL)
+All database interactions go through a Data Access Layer (DAL):
+Example Functions:
+•	createUser()
+•	getOrdersByDateRange()
+•	updateInventory()
+•	calculatePnL()
+Benefits:
+•	Easy database switching
+•	Clean separation of logic
+•	Scalable architecture
+________________________________________
+12. 🗂️ DATA MODEL (DATABASE-AGNOSTIC)
+Core Entities
+Users
+•	id
+•	name
+•	phone
+•	role (customer/admin)
+•	wallet_balance
+________________________________________
+Products
+•	id
+•	name
+•	category
+•	price
+•	stock
+________________________________________
+Subscriptions
+•	id
+•	user_id
+•	product_id
+•	schedule
+•	quantity
+________________________________________
+Orders
+•	id
+•	user_id
+•	status
+•	total_amount
+•	created_at
+________________________________________
+Order Items
+•	order_id
+•	product_id
+•	quantity
+________________________________________
+Inventory
+•	product_id
+•	stock
+•	expiry_date
+________________________________________
+Finance Records ⭐
+•	id
+•	type (revenue / expense)
+•	amount
+•	category
+•	date
+________________________________________
+13. 📄 PAGE STRUCTURE
+User App
+•	Home
+•	Products
+•	Cart
+•	Checkout
+•	Subscriptions
+•	Orders
+Admin App
+•	Dashboard
+•	Orders
+•	Inventory
+•	Products
+•	Customers
+•	Finance
+________________________________________
+14. 🚀 MVP SCOPE
+Phase 1
+•	Authentication
+•	Product catalog
+•	Subscription system ⭐
+•	Wallet system
+•	Admin dashboard
+•	Inventory management
+•	Notifications
+________________________________________
+Phase 2
+•	Delivery module
+•	Demand prediction
+•	Traceability
+•	Advanced analytics
+________________________________________
+15. 🏗️ ARCHITECTURE OPTIONS
+Option A (Recommended)
+Single Next.js app:
+•	/ → User platform
+•	/admin → Admin platform
+Option B (Future)
+•	Separate apps (shop + admin)
+________________________________________
+16. 🔐 ACCESS CONTROL
+•	Role-based system:
+o	customer
+o	admin
+•	Middleware protection:
+o	Restrict /admin access
+o	Secure APIs
+________________________________________
+17. 🔥 FINAL PRODUCT VISION
+A complete organic commerce ecosystem combining:
+•	E-commerce experience
+•	Subscription-based delivery
+•	Farm transparency
+•	Operational intelligence
+________________________________________
+18. 🧠 SUCCESS FACTORS
+•	Smooth subscription UX
+•	Reliable delivery
+•	Accurate demand planning
+•	Strong organic trust
+•	Powerful admin dashboard (P&L visibility)
+________________________________________
+Key decisions locked as of April 2026:
+•	Database: Supabase (PostgreSQL) via Connect API (PostgREST)
+•	Payments: Dummy gateway for Phase 1 testing; real gateway in Phase 2
+•	Auth: Supabase Phone OTP
+•	Storage: Supabase Storage
+Next steps: Database schema setup, DAL implementation, Phase 1 build.
