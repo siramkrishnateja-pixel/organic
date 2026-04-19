@@ -1,14 +1,13 @@
 'use client';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { fetchFromAPI } from '@/lib/api-client';
 import { Star, MapPin, Shield, ChevronLeft, Minus, Plus, Calendar, Zap } from 'lucide-react';
-import { use } from 'react';
 import { products as mockProducts } from '@/lib/mock-data/products';
 import Link from 'next/link';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = use(params);
+  const resolvedParams = use(params);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,10 +21,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     async function loadProduct() {
       try {
-        const data = await fetchFromAPI(`/product/catalog/${unwrappedParams.id}`);
+        const data = await fetchFromAPI(`/product/catalog/${resolvedParams.id}`);
         setProduct(data.product);
       } catch (_err: any) {
-        const fallback = mockProducts.find((item) => item.id === unwrappedParams.id);
+        const fallback = mockProducts.find((item) => item.id === resolvedParams.id);
         if (fallback) {
           setProduct(fallback);
           setWarning('Unable to reach the product API. Showing offline product data.');
@@ -38,7 +37,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       }
     }
     loadProduct();
-  }, [unwrappedParams.id]);
+  }, [resolvedParams.id]);
 
   const handleAdd = () => { setAdded(true); setTimeout(() => setAdded(false), 2000); };
 

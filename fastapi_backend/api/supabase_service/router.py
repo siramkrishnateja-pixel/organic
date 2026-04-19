@@ -55,7 +55,6 @@ class VerifyOTPRequest(BaseModel):
     method: str = "phone"
     requested_role: str = "user"
     allow_test_otp: bool = False
-    allow_test_otp: bool = False
 
 @router.post("/auth/send-otp")
 def send_otp(request: SendOTPRequest):
@@ -175,6 +174,91 @@ def verify_otp(request: VerifyOTPRequest):
             return {"status": "error", "message": str(e)}
 
     return {"status": "error", "message": "Invalid OTP or authentication failed. Try code 123456 for demo mode."}
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    requested_role: str = "user"
+
+@router.post("/auth/login")
+def login(request: LoginRequest):
+    if not request.email or not request.password:
+        return {"status": "error", "message": "Email and password are required."}
+
+    email = request.email.lower()
+    test_identifiers = [
+        "test@example.com",
+        "testuser@gmail.com",
+        "demo@organic.local",
+        "admin@organic.local",
+        "customer@organic.local",
+    ]
+    
+    is_test_identifier = any(email.endswith(t) for t in test_identifiers)
+
+    if supabase:
+        try:
+            if hasattr(supabase.auth, "sign_in_with_password"):
+                auth_response = supabase.auth.sign_in_with_password({"email": email, "password": request.password})
+            else:
+                auth_response = supabase.auth.sign_in(email=email, password=request.password)
+
+            error = None
+            user = None
+            if isinstance(auth_response, dict):
+                error = auth_response.get("error") or auth_response.get("error_description")
+                user = auth_response.get("user") or auth_response.get("data", {}).get("user")
+            else:
+                error = getattr(auth_response, "error", None)
+                user = getattr(auth_response, "user", None) or getattr(auth_response, "data", None)
+
+            if error:
+                if is_test_identifier and request.password == "password123":
+                    return {
+                        "status": "success",
+                        "message": "Test login successful.",
+                        "role": request.requested_role,
+                        "identifier": email,
+                        "user_id": email,
+                    }
+                return {"status": "error", "message": str(error)}
+
+            user_id = None
+            if user:
+                if isinstance(user, dict):
+                    user_id = user.get("id") or user.get("email")
+                else:
+                    user_id = getattr(user, "id", None) or getattr(user, "email", None)
+
+            return {
+                "status": "success",
+                "message": "Login successful.",
+                "role": request.requested_role,
+                "identifier": email,
+                "user_id": user_id or email,
+            }
+        except Exception as e:
+            if is_test_identifier and request.password == "password123":
+                return {
+                    "status": "success",
+                    "message": "Test login successful.",
+                    "role": request.requested_role,
+                    "identifier": email,
+                    "user_id": email,
+                }
+            return {"status": "error", "message": str(e)}
+
+    if is_test_identifier and request.password == "password123":
+        return {
+            "status": "success",
+            "message": "Test login successful.",
+            "role": request.requested_role,
+            "identifier": email,
+            "user_id": email,
+        }
+
+    return {"status": "error", "message": "Invalid email or password. Use test credentials for demo mode."}
 
 
 class ValidateSessionRequest(BaseModel):

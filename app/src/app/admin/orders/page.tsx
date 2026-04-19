@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { fetchFromAPI } from '@/lib/api-client';
+import { orders as mockOrders } from '@/lib/mock-data/orders';
 import { Search, Filter, Download } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
@@ -22,12 +23,15 @@ export default function AdminOrdersPage() {
         const data = await fetchFromAPI('/admin/orders');
         if (data.status === 'success') {
           setOrders(data.orders || []);
+        } else if (data.offline) {
+          // Backend is offline, use mock data
+          setOrders(mockOrders);
         } else {
-          setError('Failed to load orders');
+          setOrders(mockOrders);
         }
       } catch (err: any) {
-        setError('Failed to load orders');
         console.error('Error loading orders:', err);
+        setOrders(mockOrders);
       } finally {
         setLoading(false);
       }

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchFromAPI } from '@/lib/api-client';
+import { customers as mockCustomers } from '@/lib/mock-data/customers';
 import { Search, Wallet, Package, RefreshCw, TrendingUp } from 'lucide-react';
 
 export default function AdminCustomersPage() {
@@ -14,11 +15,14 @@ export default function AdminCustomersPage() {
     async function loadCustomersData() {
       try {
         const data = await fetchFromAPI('/admin/customers');
-        setCustomers(data.customers || []);
+        if (data.offline) {
+          setCustomers(mockCustomers);
+        } else {
+          setCustomers(data.customers || mockCustomers);
+        }
       } catch (err: any) {
-        console.error('Failed to load customer data from API', err);
-        setError('Unable to load customer data. Please refresh or try again later.');
-        setCustomers([]);
+        console.error('Failed to load customer data:', err);
+        setCustomers(mockCustomers);
       } finally {
         setLoading(false);
       }

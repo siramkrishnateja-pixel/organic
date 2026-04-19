@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ArrowRight, Shield, Leaf, Truck, Star, ChevronRight, CheckCircle } from 'lucide-react';
 import { fetchFromAPI } from '@/lib/api-client';
+import { products as mockProducts } from '@/lib/mock-data/products';
 
 const categories = [
   { id: 'all', name: 'All Products', icon: '🛒' },
@@ -36,6 +37,7 @@ export default function HomePage() {
         }
       } catch (err) {
         setError('Failed to load products');
+        setProducts(mockProducts);
         console.error('Error fetching products:', err);
       } finally {
         setLoading(false);
@@ -172,16 +174,16 @@ export default function HomePage() {
           {filtered.map((product, i) => (
             <Link key={product.id} href={`/products/${product.id}`} className={`product-card block animate-fadeInUp delay-${(i % 3 + 1) * 100}`}>
               <div className="relative h-52 bg-gray-50">
-                <Image src={product.image_url || '/products/placeholder.png'} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <Image src={product.image_url || product.image || '/products/placeholder.png'} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
                 <span className="sub-tag absolute top-3 right-3">Subscribe</span>
               </div>
               <div className="p-4">
-                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{product.farm_info}</p>
+                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{product.farm_info || `${product.farmName || ''}${product.farmLocation ? ` · ${product.farmLocation}` : ''}`}</p>
                 <h3 className="font-semibold text-base mb-1" style={{ color: '#1B2D2A' }}>{product.name}</h3>
                 <div className="flex items-center gap-1 mb-3">
                   <Star size={12} fill="#F4A261" stroke="none" />
-                  <span className="text-xs font-medium">4.5</span>
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>(0)</span>
+                  <span className="text-xs font-medium">{product.rating || 4.5}</span>
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>({product.reviews || 0})</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>

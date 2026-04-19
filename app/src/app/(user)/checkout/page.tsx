@@ -41,19 +41,14 @@ export default function CheckoutPage() {
         return;
       }
       
-      const response = await fetchFromAPI('/payment/razorpay-dummy', {
+      const data = await fetchFromAPI('/payment/razorpay-dummy', {
         method: 'POST',
         body: JSON.stringify({
           amount: 575,
           receipt: "order_rcptid_11",
         })
       });
-      
-      if (!response.ok) throw new Error('Payment network error');
-      
-      const data = await response.json();
       console.log('Response from FastAPI Python Backend:', data);
-      
       setShowPayModal(false);
       setPaymentState('success');
     } catch (error) {

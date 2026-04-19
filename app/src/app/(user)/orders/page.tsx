@@ -27,7 +27,7 @@ export default function OrdersPage() {
         }
         setIsLoggedIn(true);
         const data = await fetchFromAPI(`/user/${userId}/orders`);
-        setMyOrders(data);
+        setMyOrders(data.orders || (Array.isArray(data) ? data : []));
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -90,9 +90,9 @@ export default function OrdersPage() {
                   <span className={`badge ${statusColors[order.status] || 'badge-muted'}`}>{order.status.replace(/_/g, ' ')}</span>
                   <span className="badge badge-muted">{order.orderType === 'subscription' ? '📅 Sub' : '🛒 Once'}</span>
                 </div>
-                <p className="text-sm" style={{ color: '#6B7280' }}>{order.createdAt.split('T')[0]} · {order.deliverySlot} · ₹{order.totalAmount}</p>
+                <p className="text-sm" style={{ color: '#6B7280' }}>{String(order.createdAt).split('T')[0]} · {order.deliverySlot} · ₹{order.totalAmount}</p>
                 <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
-                  {order.items?.map((i: any) => `${i.name} ×${i.quantity}`).join(', ')}
+                  {order.items?.map((i: any) => `${i.productName || i.name} ×${i.quantity}`).join(', ')}
                 </p>
               </div>
               <button id={`view-order-${order.id}`} onClick={() => setSelected(order.id)} className="btn btn-outline btn-sm flex items-center gap-1">
@@ -126,9 +126,9 @@ export default function OrdersPage() {
             <span className={`badge ${statusColors[selectedOrder.status]}`}>{selectedOrder.status.replace(/_/g, ' ')}</span>
             <div className="mt-4 space-y-3">
               {selectedOrder.items?.map((item: any) => (
-                <div key={item.productId} className="flex justify-between text-sm">
-                  <span style={{ color: '#6B7280' }}>{item.name} ×{item.quantity}</span>
-                  <span style={{ fontWeight: 600 }}>₹{item.subtotal}</span>
+                <div key={item.productId || item.id} className="flex justify-between text-sm">
+                  <span style={{ color: '#6B7280' }}>{item.productName || item.name} ×{item.quantity}</span>
+                  <span style={{ fontWeight: 600 }}>₹{item.subtotal ?? ((item.price ?? 0) * (item.quantity ?? 0))}</span>
                 </div>
               ))}
             </div>

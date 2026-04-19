@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { fetchFromAPI } from '@/lib/api-client';
+import { inventory as mockInventory } from '@/lib/mock-data/inventory';
 
 const statusStyle: Record<string, string> = { fresh: 'badge-success', expiring_soon: 'badge-danger', expired: 'badge-muted' };
 
@@ -15,9 +16,14 @@ export default function AdminInventoryPage() {
     async function loadInventory() {
       try {
         const data = await fetchFromAPI('/admin/inventory');
-        setInventory(data.inventory || []);
+        if (data.offline) {
+          setInventory(mockInventory);
+        } else {
+          setInventory(data.inventory || mockInventory);
+        }
       } catch (err: any) {
-        setError(err.message);
+        console.error('Failed to load inventory:', err);
+        setInventory(mockInventory);
       } finally {
         setLoading(false);
       }

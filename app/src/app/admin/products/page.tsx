@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { fetchFromAPI } from '@/lib/api-client';
+import { products as mockProducts } from '@/lib/mock-data/products';
 
 export default function AdminProductsPage() {
   const [prods, setProds] = useState<any[]>([]);
@@ -14,9 +15,15 @@ export default function AdminProductsPage() {
     async function loadProducts() {
       try {
         const data = await fetchFromAPI('/product/catalog');
-        setProds(data.products || []);
+        if (data.offline) {
+          setProds(mockProducts);
+          setError('Backend is offline. Showing mock product data.');
+        } else {
+          setProds(data.products || []);
+        }
       } catch (err: any) {
-        setError(err.message);
+        setProds(mockProducts);
+        setError('Unable to reach the catalog API. Showing offline product mock data.');
       } finally {
         setLoading(false);
       }

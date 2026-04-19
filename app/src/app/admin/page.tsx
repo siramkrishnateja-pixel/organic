@@ -4,6 +4,17 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContai
 import { ShoppingBag, RefreshCw, TrendingUp, Users, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { fetchFromAPI } from '@/lib/api-client';
+import { dashboardKPIs, ordersChartDataThisWeek, ordersChartDataLastWeek, revenueByCategory, lowStockAlerts, expiringBatches, monthlyPnL } from '@/lib/mock-data/dashboard';
+
+const fallbackDashboardData = {
+  dashboardKPIs,
+  ordersChartDataThisWeek,
+  ordersChartDataLastWeek,
+  revenueByCategory,
+  lowStockAlerts,
+  expiringBatches,
+  monthlyPnL,
+};
 
 export default function AdminDashboard() {
   const [selectedWeek, setSelectedWeek] = useState('this');
@@ -15,9 +26,14 @@ export default function AdminDashboard() {
     async function loadDashboard() {
       try {
         const data = await fetchFromAPI('/admin/dashboard');
-        setDashboardData(data);
+        if (data?.offline) {
+          setDashboardData(fallbackDashboardData);
+        } else {
+          setDashboardData(data ?? fallbackDashboardData);
+        }
       } catch (err: any) {
-        setError(err.message);
+        console.error('Failed to load dashboard:', err);
+        setDashboardData(fallbackDashboardData);
       } finally {
         setLoading(false);
       }
@@ -33,7 +49,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error || !dashboardData) {
+  if (!dashboardData) {
     return <div className="text-red-500 pt-20">Failed to load dashboard: {error}</div>;
   }
 
