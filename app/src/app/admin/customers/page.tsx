@@ -1,15 +1,52 @@
 'use client';
-import React, { useState } from 'react';
-import { customers } from '@/lib/mock-data/customers';
-import { Search, Wallet, Package, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
+import { Search, Wallet, Package, RefreshCw, TrendingUp } from 'lucide-react';
 
 export default function AdminCustomersPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-  const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
-  );
-  const selectedCustomer = customers.find(c => c.id === selected);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadCustomersData() {
+      try {
+        const data = await fetchFromAPI('/admin/customers');
+        setCustomers(data.customers || []);
+      } catch (err: any) {
+        console.error('Failed to load customer data from API', err);
+        setError('Unable to load customer data. Please refresh or try again later.');
+        setCustomers([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCustomersData();
+  }, []);
+
+  // Calculate LTV (Lifetime Value) = totalSpent with memoization
+  const customersWithLTV = useMemo(() => customers.map(c => ({
+    ...c,
+    ltv: c.totalSpent,
+    ltv_tier: c.totalSpent >= 20000 ? 'Premium' : c.totalSpent >= 10000 ? 'Plus' : 'Standard'
+  })), [customers]);
+
+  const filtered = useMemo(() => 
+    customersWithLTV.filter(c =>
+      c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
+    ), [customersWithLTV, search]);
+  const selectedCustomer = customersWithLTV.find(c => c.id === selected);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -18,8 +55,19 @@ export default function AdminCustomersPage() {
         <p style={{ color: '#64748B' }}>{customers.length} registered · {customers.filter(c => c.activeSubscriptions > 0).length} with active subscriptions</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        {[['Total Customers', customers.length, '#2D6A4F'], ['Active Subscribers', customers.filter(c => c.activeSubscriptions > 0).length, '#3B82F6'], ['Avg. Wallet Balance', `₹${Math.round(customers.reduce((a, c) => a + c.walletBalance, 0) / customers.length)}`, '#F4A261']].map(([l, v, c]) => (
+      {error && (
+        <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-900/20 p-4 text-sm text-yellow-400">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        {[
+          ['Total Customers', customers.length, '#2D6A4F'],
+          ['Active Subscribers', customers.filter(c => c.activeSubscriptions > 0).length, '#3B82F6'],
+          ['Avg. LTV', `₹${Math.round(customers.reduce((a, c) => a + c.totalSpent, 0) / customers.length)}`, '#52B788'],
+          ['Avg. Wallet Balance', `₹${Math.round(customers.reduce((a, c) => a + c.walletBalance, 0) / customers.length)}`, '#F4A261']
+        ].map(([l, v, c]) => (
           <div key={l as string} className="admin-card text-center">
             <p className="text-2xl font-extrabold" style={{ color: c as string }}>{v}</p>
             <p className="text-sm mt-1" style={{ color: '#64748B' }}>{l}</p>
@@ -34,7 +82,7 @@ export default function AdminCustomersPage() {
 
       <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #1E3A4A' }}>
         <table className="data-table data-table-dark w-full">
-          <thead><tr>{['Customer', 'Phone', 'Orders', 'Subscriptions', 'Total Spent', 'Wallet', 'Status', 'Details'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+          <thead><tr>{['Customer', 'Phone', 'Orders', 'Subscriptions', 'LTV Tier', 'Total Spent', 'Wallet', 'Status', 'Details'].map(h => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.map(c => (
               <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(c.id)}>
@@ -50,6 +98,7 @@ export default function AdminCustomersPage() {
                 <td style={{ color: '#94A3B8' }}>{c.phone}</td>
                 <td className="font-bold text-white">{c.totalOrders}</td>
                 <td><span className={`badge ${c.activeSubscriptions > 0 ? 'badge-success' : 'badge-muted'}`}>{c.activeSubscriptions}</span></td>
+                <td><span className={`badge ${c.ltv_tier === 'Premium' ? 'badge-warning' : c.ltv_tier === 'Plus' ? 'badge-info' : 'badge-muted'}`}>{c.ltv_tier}</span></td>
                 <td style={{ color: '#52B788', fontWeight: 600 }}>₹{c.totalSpent.toLocaleString()}</td>
                 <td style={{ color: c.walletBalance > 0 ? '#E2E8F0' : '#64748B', fontWeight: 600 }}>₹{c.walletBalance}</td>
                 <td><span className={`badge ${c.status === 'active' ? 'badge-success' : 'badge-muted'}`}>{c.status}</span></td>
@@ -76,7 +125,7 @@ export default function AdminCustomersPage() {
               {([
                 { Icon: Package, label: 'Orders', val: selectedCustomer.totalOrders },
                 { Icon: RefreshCw, label: 'Subs', val: selectedCustomer.activeSubscriptions },
-                { Icon: Wallet, label: 'Spent', val: `₹${(selectedCustomer.totalSpent/1000).toFixed(1)}K` },
+                { Icon: TrendingUp, label: 'LTV', val: `₹${(selectedCustomer.ltv/1000).toFixed(1)}K` },
               ] as { Icon: React.ElementType; label: string; val: string | number }[]).map(({ Icon, label, val }) => (
                 <div key={label} className="admin-card text-center p-3">
                   <Icon size={16} className="mx-auto mb-1" style={{ color: '#52B788' }} />
@@ -84,6 +133,15 @@ export default function AdminCustomersPage() {
                   <p className="text-xs" style={{ color: '#64748B' }}>{label}</p>
                 </div>
               ))}
+            </div>
+            <div className="admin-card mb-4 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold" style={{ color: '#64748B' }}>LTV TIER</p>
+                <span className={`badge ${selectedCustomer.ltv_tier === 'Premium' ? 'badge-warning' : selectedCustomer.ltv_tier === 'Plus' ? 'badge-info' : 'badge-muted'}`}>{selectedCustomer.ltv_tier}</span>
+              </div>
+              <p className="text-sm text-white">
+                {selectedCustomer.ltv_tier === 'Premium' ? '🎖️ Premium Customer - Highest value' : selectedCustomer.ltv_tier === 'Plus' ? '⭐ Plus Customer - High value' : '📌 Standard Customer'}
+              </p>
             </div>
             <div className="admin-card mb-4">
               <p className="text-xs font-semibold mb-2" style={{ color: '#64748B' }}>WALLET BALANCE</p>

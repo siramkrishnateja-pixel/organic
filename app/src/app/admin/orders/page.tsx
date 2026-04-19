@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { orders } from '@/lib/mock-data/orders';
+import { useState, useEffect } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
 import { Search, Filter, Download } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
@@ -9,15 +9,57 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminOrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const data = await fetchFromAPI('/admin/orders');
+        if (data.status === 'success') {
+          setOrders(data.orders || []);
+        } else {
+          setError('Failed to load orders');
+        }
+      } catch (err: any) {
+        setError('Failed to load orders');
+        console.error('Error loading orders:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const filtered = orders
     .filter(o => statusFilter === 'all' || o.status === statusFilter)
     .filter(o => o.id.includes(search) || o.customerName.toLowerCase().includes(search.toLowerCase()));
 
   const selectedOrder = orders.find(o => o.id === selected);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="text-center text-red-400">
+          <p className="text-lg font-semibold mb-2">Unable to load orders</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -60,18 +102,18 @@ export default function AdminOrdersPage() {
           <tbody>
             {filtered.map(order => (
               <tr key={order.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(order.id)}>
-                <td className="font-mono text-sm" style={{ color: '#52B788' }}>{order.id}</td>
+                <td className="font-mono text-sm" style={{ color: '#52B788' }}>{order.id.slice(-8)}</td>
                 <td>
                   <p className="font-medium text-sm text-white">{order.customerName}</p>
                   <p className="text-xs" style={{ color: '#64748B' }}>{order.customerPhone}</p>
                 </td>
                 <td className="text-sm" style={{ color: '#94A3B8', maxWidth: '180px' }}>
-                  {order.items.map(i => i.name).join(', ').slice(0, 40)}…
+                  {order.productName}
                 </td>
                 <td className="font-bold text-white">₹{order.totalAmount}</td>
                 <td><span className={`badge ${order.orderType === 'subscription' ? 'badge-primary' : 'badge-muted'}`}>{order.orderType === 'subscription' ? '📅 Sub' : '🛒 Once'}</span></td>
                 <td><span className={`badge ${statusColors[order.status] || 'badge-muted'}`}>{order.status.replace(/_/g, ' ')}</span></td>
-                <td className="text-xs" style={{ color: '#64748B' }}>{order.createdAt.split('T')[0]}</td>
+                <td className="text-xs" style={{ color: '#64748B' }}>{order.createdAt ? order.createdAt.split('T')[0] : order.deliveryDate}</td>
                 <td>
                   <select onClick={e => e.stopPropagation()} className="text-xs rounded-lg px-2 py-1" style={{ background: '#0F1923', color: '#94A3B8', border: '1px solid #1E3A4A' }}>
                     <option>Update Status</option>
@@ -105,7 +147,7 @@ export default function AdminOrdersPage() {
               </div>
               <div className="admin-card">
                 <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#64748B' }}>Items</p>
-                {selectedOrder.items.map(item => (
+                {selectedOrder.items.map((item: any) => (
                   <div key={item.productId} className="flex justify-between text-sm mb-2">
                     <span style={{ color: '#94A3B8' }}>{item.name} ×{item.quantity}</span>
                     <span className="text-white font-semibold">₹{item.subtotal}</span>

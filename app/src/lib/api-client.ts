@@ -29,7 +29,6 @@ export async function fetchFromAPI(endpoint: string, options: RequestInit = {}) 
 
     return data;
   } catch (error) {
-    console.error(`Fetch error for ${url}:`, error);
     throw error;
   }
 }

@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, Bell, User, Leaf, Home, Package, ClipboardList, RefreshCw, LogIn } from 'lucide-react';
+import { ShoppingCart, Search, Bell, User, Leaf, Home, Package, ClipboardList, RefreshCw, LogIn, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import LoginModal from './LoginModal';
+import { SessionManager } from '@/lib/session-manager';
 
 const navLinks = [
   { href: '/',              label: 'Home',          icon: Home },
@@ -19,19 +20,19 @@ export default function UserNavbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const role = localStorage.getItem('organic_user_role');
-      if (role === 'customer' || role === 'admin') {
-        setIsLoggedIn(true);
-      }
+      // Use session manager for authentication state
+      const isLoggedIn = SessionManager.isAuthenticated();
+      setIsLoggedIn(isLoggedIn);
     }
   }, []);
 
   const handleLogout = () => {
+    SessionManager.clearSession();
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('organic_user_role');
       window.location.reload();
     }
   };
@@ -40,9 +41,20 @@ export default function UserNavbar() {
     <>
       <nav className="bg-white border-b border-gray-100 sticky top-[53px] z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
-          {/* Nav links */}
-          <div className="flex items-center gap-1">
-            {navLinks.map(({ href, label, icon: Icon }) => {
+          
+          {/* Mobile menu toggle */}
+          <button 
+            className="md:hidden btn btn-ghost btn-icon mr-2" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          {/* Desktop Nav links */}
+          <div className="hidden md:flex items-center gap-1 flex-1">
+            {navLinks
+              .filter(link => !(link.href === '/orders' && !isLoggedIn))
+              .map(({ href, label, icon: Icon }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href));
               return (
                 <Link key={href} href={href} className={`nav-link ${active ? 'active' : ''}`}>
@@ -60,14 +72,14 @@ export default function UserNavbar() {
               {showSearch && (
                 <input 
                   type="text" 
-                  placeholder="Search organic products..." 
+                  placeholder="Search..." 
                   autoFocus
                   onKeyDown={(e) => {
                     if(e.key === 'Enter') {
                       window.location.href = `/products?search=${e.currentTarget.value}`;
                     }
                   }}
-                  className="absolute right-10 top-1/2 -translate-y-1/2 h-9 w-56 px-4 rounded-full border outline-none shadow-sm text-sm bg-white"
+                  className="absolute right-10 top-1/2 -translate-y-1/2 h-9 w-40 md:w-56 px-4 rounded-full border outline-none shadow-sm text-sm bg-white"
                   style={{ borderColor: '#2D6A4F', zIndex: 50, color: '#1B2D2A' }}
                 />
               )}
@@ -146,6 +158,30 @@ export default function UserNavbar() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white border-b shadow-lg absolute w-full z-30">
+          <div className="flex flex-col p-4 space-y-2">
+            {navLinks
+              .filter(link => !(link.href === '/orders' && !isLoggedIn))
+              .map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || (href !== '/' && pathname.startsWith(href));
+              return (
+                <Link 
+                  key={href} 
+                  href={href} 
+                  className={`nav-link w-full text-left justify-start ${active ? 'active' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Icon size={18} className="mr-2" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <LoginModal 
         isOpen={isLoginOpen} 

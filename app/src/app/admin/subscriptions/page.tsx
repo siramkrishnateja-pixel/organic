@@ -1,14 +1,45 @@
 'use client';
 import Image from 'next/image';
-import { subscriptions } from '@/lib/mock-data/subscriptions';
 import { Pause, Play } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
 
 const statusColors: Record<string, string> = { active: 'badge-success', paused: 'badge-warning', cancelled: 'badge-muted' };
 
 export default function AdminSubscriptionsPage() {
-  const [subs, setSubs] = useState(subscriptions);
+  const [subs, setSubs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadSubscriptions() {
+      try {
+        const data = await fetchFromAPI('/admin/subscriptions');
+        setSubs(data.subscriptions || []);
+      } catch (err: any) {
+        console.error('Failed to load subscriptions from API', err);
+        setError('Unable to load subscriptions. Please refresh the page.');
+        setSubs([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSubscriptions();
+  }, []);
+
   const toggle = (id: string) => setSubs(prev => prev.map(s => s.id === id ? { ...s, status: s.status === 'active' ? 'paused' : 'active' } as typeof s : s));
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center pt-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 pt-20">Failed to load subscriptions: {error}</div>;
+  }
 
   return (
     <div>

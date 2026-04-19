@@ -1,12 +1,40 @@
 'use client';
 import Image from 'next/image';
-import { products } from '@/lib/mock-data/products';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
 
 export default function AdminProductsPage() {
-  const [prods, setProds] = useState(products);
+  const [prods, setProds] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await fetchFromAPI('/product/catalog');
+        setProds(data.products || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center pt-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 pt-20">Failed to load products: {error}</div>;
+  }
 
   return (
     <div>
@@ -53,17 +81,17 @@ export default function AdminProductsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {prods.map(product => (
+        {prods.map((product: any) => (
           <div key={product.id} className="admin-card flex gap-3">
             <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-800">
-              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized={product.image.startsWith('http')} />
+              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <p className="font-semibold text-sm text-white leading-tight">{product.name}</p>
                 <div className="flex gap-1 shrink-0">
                   <button className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white hover:bg-opacity-10" style={{ color: '#64748B' }}><Edit size={13} /></button>
-                  <button onClick={() => setProds(p => p.filter(x => x.id !== product.id))} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500 hover:bg-opacity-20" style={{ color: '#64748B' }}><Trash2 size={13} /></button>
+                  <button onClick={() => setProds(p => p.filter((x: any) => x.id !== product.id))} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-500 hover:bg-opacity-20" style={{ color: '#64748B' }}><Trash2 size={13} /></button>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-1">

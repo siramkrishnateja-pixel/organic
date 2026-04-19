@@ -1,13 +1,43 @@
 'use client';
-import { useState } from 'react';
-import { inventory } from '@/lib/mock-data/inventory';
+import { useState, useEffect } from 'react';
 import { AlertTriangle, Plus } from 'lucide-react';
+import { fetchFromAPI } from '@/lib/api-client';
 
 const statusStyle: Record<string, string> = { fresh: 'badge-success', expiring_soon: 'badge-danger', expired: 'badge-muted' };
 
 export default function AdminInventoryPage() {
   const [showForm, setShowForm] = useState(false);
-  const expiring = inventory.filter(i => i.status === 'expiring_soon');
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadInventory() {
+      try {
+        const data = await fetchFromAPI('/admin/inventory');
+        setInventory(data.inventory || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadInventory();
+  }, []);
+
+  const expiring = inventory.filter((i: any) => i.status === 'expiring_soon');
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center pt-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 pt-20">Failed to load inventory: {error}</div>;
+  }
 
   return (
     <div>
@@ -26,7 +56,7 @@ export default function AdminInventoryPage() {
         <div className="rounded-2xl p-4 mb-6 flex items-center gap-3" style={{ background: 'rgba(230,57,70,0.1)', border: '1px solid rgba(230,57,70,0.2)' }}>
           <AlertTriangle size={20} style={{ color: '#E63946' }} />
           <p className="text-sm" style={{ color: '#E63946' }}>
-            <strong>{expiring.length} batches expiring soon:</strong> {expiring.map(b => b.productName).join(', ')}
+            <strong>{expiring.length} batches expiring soon:</strong> {expiring.map((b: any) => b.productName).join(', ')}
           </p>
         </div>
       )}
@@ -58,7 +88,7 @@ export default function AdminInventoryPage() {
             <tr>{['Product', 'Category', 'Batch', 'Qty', 'Produced', 'Expires', 'Days Left', 'Wastage', 'Status'].map(h => <th key={h}>{h}</th>)}</tr>
           </thead>
           <tbody>
-            {inventory.map(item => (
+            {inventory.map((item: any) => (
               <tr key={item.id}>
                 <td className="font-medium text-white">{item.productName}</td>
                 <td><span className="badge badge-muted">{item.category}</span></td>

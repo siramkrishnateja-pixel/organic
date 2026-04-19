@@ -14,11 +14,18 @@ export default function OrdersPage() {
   const [myOrders, setMyOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     async function loadOrders() {
       try {
-        const userId = localStorage.getItem('organic_user_id') || 'guest';
+        const userId = localStorage.getItem('organic_user_id');
+        if (!userId) {
+          setIsLoggedIn(false);
+          setLoading(false);
+          return;
+        }
+        setIsLoggedIn(true);
         const data = await fetchFromAPI(`/user/${userId}/orders`);
         setMyOrders(data);
       } catch (err: any) {
@@ -37,6 +44,16 @@ export default function OrdersPage() {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center animate-fadeIn">
+        <p className="text-5xl mb-4">🔒</p>
+        <h1 className="text-2xl font-bold mb-2" style={{ color: '#1B2D2A' }}>Login Required</h1>
+        <p className="text-sm" style={{ color: '#6B7280' }}>Please log in to view your orders and track deliveries.</p>
       </div>
     );
   }

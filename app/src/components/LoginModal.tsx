@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { X, Smartphone, Mail } from 'lucide-react';
+import { fetchFromAPI } from '../lib/api-client';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -10,13 +11,14 @@ interface LoginModalProps {
 
 export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: LoginModalProps) {
   const [roleTab, setRoleTab] = useState<'user' | 'admin'>(defaultRole);
-  const [methodTab, setMethodTab] = useState<'phone' | 'email'>('phone');
+  const [methodTab, setMethodTab] = useState<'phone' | 'email'>('email');
   const [step, setStep] = useState<'input' | 'otp'>('input');
   const [inputValue, setInputValue] = useState('');
   const [otpValue, setOtpValue] = useState('');
 
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [allowTestOtp, setAllowTestOtp] = useState(false);
 
   if (!isOpen) return null;
 
@@ -27,17 +29,15 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
     
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/supabase/auth/send-otp', {
+      const data = await fetchFromAPI('/supabase/auth/send-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: inputValue, method: methodTab })
       });
-      const data = await res.json();
       if (data.status === 'error') throw new Error(data.message);
+      setAllowTestOtp(!!data.allowTestOtp);
       setStep('otp');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to send OTP');
-    } finally {
+      setErrorMsg(err.message || 'Failed to send OTP.');
       setIsLoading(false);
     }
   };
@@ -49,25 +49,25 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
 
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/supabase/auth/verify-otp', {
+      const data = await fetchFromAPI('/supabase/auth/verify-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           identifier: inputValue, 
           otp: otpValue, 
-          requested_role: roleTab 
+          requested_role: roleTab,
+          method: methodTab,
+          allow_test_otp: allowTestOtp,
         })
       });
-      const data = await res.json();
       
       if (data.status === 'error') {
         throw new Error(data.message);
       }
       
-      // Success! The python backend verified the role.
+      const userId = data.user_id || data.identifier;
       if (typeof window !== 'undefined') {
         localStorage.setItem('organic_user_role', data.role);
-        localStorage.setItem('organic_user_id', data.identifier);
+        localStorage.setItem('organic_user_id', userId);
         window.location.reload();
       }
     } catch (err: any) {
@@ -100,7 +100,7 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
             <button
               onClick={() => { setRoleTab('user'); setStep('input'); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                roleTab === 'user' ? 'bg-white shadow-sm text-green-900' : 'text-gray-500 hover:text-gray-700'
+                roleTab === 'user' ? 'bg-white shadow-sm text-slate-900' : 'text-gray-500 hover:text-slate-900'
               }`}
             >
               Customer
@@ -108,7 +108,7 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
             <button
               onClick={() => { setRoleTab('admin'); setStep('input'); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-                roleTab === 'admin' ? 'bg-white shadow-sm text-green-900' : 'text-gray-500 hover:text-gray-700'
+                roleTab === 'admin' ? 'bg-white shadow-sm text-slate-900' : 'text-gray-500 hover:text-slate-900'
               }`}
             >
               Admin
@@ -123,7 +123,7 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
               <button
                 onClick={() => setMethodTab('phone')}
                 className={`flex items-center gap-2 pb-2 text-sm font-medium border-b-2 transition-colors ${
-                  methodTab === 'phone' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'
+                  methodTab === 'phone' ? 'border-slate-900 text-slate-900' : 'border-transparent text-gray-500 hover:text-slate-900'
                 }`}
               >
                 <Smartphone size={16} /> Phone
@@ -131,7 +131,7 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
               <button
                 onClick={() => setMethodTab('email')}
                 className={`flex items-center gap-2 pb-2 text-sm font-medium border-b-2 transition-colors ${
-                  methodTab === 'email' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500'
+                  methodTab === 'email' ? 'border-slate-900 text-slate-900' : 'border-transparent text-gray-500 hover:text-slate-900'
                 }`}
               >
                 <Mail size={16} /> Email
@@ -147,10 +147,10 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
                 </label>
                 <input
                   type={methodTab === 'phone' ? 'tel' : 'email'}
-                  placeholder={methodTab === 'phone' ? '+91 98765 43210' : 'you@example.com'}
+                  placeholder={methodTab === 'phone' ? '+91 98765 43210' : 'your.email@gmail.com'}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
                   required
                 />
               </div>
@@ -161,6 +161,12 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
               >
                 Send OTP
               </button>
+              {errorMsg && <p className="text-xs text-red-500 mt-2">{errorMsg}</p>}
+              <p className="text-xs text-gray-500 mt-2">
+                {allowTestOtp
+                  ? <>OTP will be sent via email. For testing, you can also use <strong>123456</strong> as the code.</>
+                  : <>A one-time code will be sent to your email address. Check your inbox in a few moments.</>}
+              </p>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
@@ -176,10 +182,11 @@ export default function LoginModal({ isOpen, onClose, defaultRole = 'user' }: Lo
                   placeholder="• • • • • •"
                   value={otpValue}
                   onChange={(e) => setOtpValue(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-center tracking-widest text-lg font-bold focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-slate-900 placeholder:text-slate-400 text-center tracking-widest text-lg font-bold focus:outline-none focus:ring-2 focus:ring-slate-900"
                   required
                 />
               </div>
+              {errorMsg && <p className="text-xs text-red-500">{errorMsg}</p>}
               <button
                 type="submit"
                 className="w-full py-2.5 rounded-lg text-white font-medium transition-colors hover:opacity-90"

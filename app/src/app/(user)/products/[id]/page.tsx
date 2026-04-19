@@ -1,20 +1,49 @@
 'use client';
 import Image from 'next/image';
-import { useState } from 'react';
-import { products } from '@/lib/mock-data/products';
+import { useState, useEffect } from 'react';
+import { fetchFromAPI } from '@/lib/api-client';
 import { Star, MapPin, Shield, ChevronLeft, Minus, Plus, Calendar, Zap } from 'lucide-react';
 import { use } from 'react';
 import Link from 'next/link';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params);
-  const product = products.find(p => p.id === unwrappedParams.id) || products[0];
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [qty, setQty] = useState(1);
   const [mode, setMode] = useState<'buy' | 'subscribe'>('buy');
   const [schedule, setSchedule] = useState('daily');
   const [added, setAdded] = useState(false);
 
+  useEffect(() => {
+    async function loadProduct() {
+      try {
+        const data = await fetchFromAPI(`/product/catalog/${unwrappedParams.id}`);
+        setProduct(data.product);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProduct();
+  }, [unwrappedParams.id]);
+
   const handleAdd = () => { setAdded(true); setTimeout(() => setAdded(false), 2000); };
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return <div className="text-red-500 pt-20 text-center">Failed to load product: {error}</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -26,7 +55,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Image */}
         <div>
           <div className="relative h-96 rounded-3xl overflow-hidden bg-gray-50">
-            <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized={product.image.startsWith('http')} />
+            <Image src={product.image} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" unoptimized />
             {product.tag && <span className="badge badge-success absolute top-5 left-5 text-sm py-1 px-4">{product.tag}</span>}
           </div>
           {/* Farm trust info */}

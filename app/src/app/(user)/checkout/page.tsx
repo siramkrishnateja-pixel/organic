@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Clock, Wallet, CreditCard, CheckCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { fetchFromAPI } from '../../../lib/api-client';
 
 const slots = ['6AM - 9AM', '9AM - 12PM', '12PM - 3PM', '3PM - 6PM'];
 
@@ -40,9 +41,8 @@ export default function CheckoutPage() {
         return;
       }
       
-      const response = await fetch('http://localhost:8000/api/payment/razorpay-dummy', {
+      const response = await fetchFromAPI('/payment/razorpay-dummy', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: 575,
           receipt: "order_rcptid_11",
@@ -57,7 +57,6 @@ export default function CheckoutPage() {
       setShowPayModal(false);
       setPaymentState('success');
     } catch (error) {
-      console.error(error);
       setShowPayModal(false);
       setPaymentState('failed');
     }
@@ -103,11 +102,11 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <h2 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: '#1B2D2A' }}><MapPin size={20} style={{ color: '#2D6A4F' }} /> Delivery Address</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input className="input-field" placeholder="Full Name" defaultValue="Priya Sharma" />
-              <input className="input-field" placeholder="Phone" defaultValue="9876543210" />
-              <input className="input-field sm:col-span-2" placeholder="Street Address" defaultValue="12 MG Road, Indiranagar" />
-              <input className="input-field" placeholder="City" defaultValue="Bangalore" />
-              <input className="input-field" placeholder="Pincode" defaultValue="560038" />
+              <input className="input-field" placeholder="Full Name" />
+              <input className="input-field" placeholder="Phone" />
+              <input className="input-field sm:col-span-2" placeholder="Street Address" />
+              <input className="input-field" placeholder="City" />
+              <input className="input-field" placeholder="Pincode" />
             </div>
           </div>
 

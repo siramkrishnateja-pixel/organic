@@ -1,8 +1,38 @@
 'use client';
-import { monthlyPnL, revenueByCategory } from '@/lib/mock-data/dashboard';
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { fetchFromAPI } from '@/lib/api-client';
 import { TrendingUp, TrendingDown, DollarSign, Percent, Plus } from 'lucide-react';
-import { useState } from 'react';
+
+// Lazy load Recharts components for better performance
+const ResponsiveContainer = dynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false });
+const LineChart = dynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false });
+const Line = dynamic(() => import('recharts').then((m) => m.Line), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then((m) => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then((m) => m.YAxis), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then((m) => m.Tooltip), { ssr: false });
+const Legend = dynamic(() => import('recharts').then((m) => m.Legend), { ssr: false });
+const PieChart = dynamic(() => import('recharts').then((m) => m.PieChart), { ssr: false });
+const Pie = dynamic(() => import('recharts').then((m) => m.Pie), { ssr: false });
+const Cell = dynamic(() => import('recharts').then((m) => m.Cell), { ssr: false });
+
+type MonthlyPnLItem = {
+  month: string;
+  revenue: number;
+  expense: number;
+  profit: number;
+};
+
+type RevenueCategory = {
+  name: string;
+  value: number;
+  color: string;
+};
+
+type DashboardData = {
+  revenueByCategory: RevenueCategory[];
+  monthlyPnL: MonthlyPnLItem[];
+};
 
 const expenses = [
   { id: 1, category: 'Production Cost', subCategory: 'Milk Processing', amount: 28000, date: '2026-04-01', description: 'Daily milk processing costs' },
@@ -11,11 +41,44 @@ const expenses = [
   { id: 4, category: 'Operations', subCategory: 'Staff Salaries', amount: 35000, date: '2026-04-01', description: 'Monthly salaries' },
 ];
 
-const latestMonth = monthlyPnL[monthlyPnL.length - 1];
-const margin = ((latestMonth.profit / latestMonth.revenue) * 100).toFixed(1);
-
 export default function AdminFinancePage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+
+  useEffect(() => {
+    async function loadFinanceData() {
+      try {
+        const data = await fetchFromAPI('/admin/dashboard');
+        // Use the full response which contains dashboardKPIs, monthlyPnL, revenueByCategory, etc.
+        setDashboardData(data);
+      } catch (err: any) {
+        setError('Unable to load finance data. Please refresh to retry.');
+        setDashboardData(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadFinanceData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  const memoizedChartData = useMemo(() => {
+    const monthlyPnL = dashboardData?.monthlyPnL || [];
+    const revenueByCategory = dashboardData?.revenueByCategory || [];
+    const latestMonth = monthlyPnL[monthlyPnL.length - 1] || { revenue: 0, expense: 0, profit: 0 };
+    const margin = latestMonth.profit && latestMonth.revenue ? ((latestMonth.profit / latestMonth.revenue) * 100).toFixed(1) : '0';
+    return { monthlyPnL, revenueByCategory, latestMonth, margin };
+  }, [dashboardData]);
 
   return (
     <div>
@@ -28,6 +91,12 @@ export default function AdminFinancePage() {
           <Plus size={16} /> Log Expense
         </button>
       </div>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-900/20 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
       {/* Expense Form */}
       {showExpenseForm && (
@@ -52,10 +121,10 @@ export default function AdminFinancePage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Revenue', value: `₹${(latestMonth.revenue/1000).toFixed(1)}K`, icon: DollarSign, color: '#52B788', trend: 'up' },
-          { label: 'Total Expenses', value: `₹${(latestMonth.expense/1000).toFixed(1)}K`, icon: TrendingDown, color: '#E63946', trend: 'down' },
-          { label: 'Net Profit', value: `₹${(latestMonth.profit/1000).toFixed(1)}K`, icon: TrendingUp, color: '#2D6A4F', trend: 'up' },
-          { label: 'Profit Margin', value: `${margin}%`, icon: Percent, color: '#F4A261', trend: 'up' },
+          { label: 'Total Revenue', value: `₹${(memoizedChartData.latestMonth.revenue/1000).toFixed(1)}K`, icon: DollarSign, color: '#52B788', trend: 'up' },
+          { label: 'Total Expenses', value: `₹${(memoizedChartData.latestMonth.expense/1000).toFixed(1)}K`, icon: TrendingDown, color: '#E63946', trend: 'down' },
+          { label: 'Net Profit', value: `₹${(memoizedChartData.latestMonth.profit/1000).toFixed(1)}K`, icon: TrendingUp, color: '#2D6A4F', trend: 'up' },
+          { label: 'Profit Margin', value: `${memoizedChartData.margin}%`, icon: Percent, color: '#F4A261', trend: 'up' },
         ].map(({ label, value, icon: Icon, color, trend }) => (
           <div key={label} className="admin-card">
             <div className="flex items-center justify-between mb-3">
@@ -77,7 +146,7 @@ export default function AdminFinancePage() {
         <div className="admin-card lg:col-span-2">
           <h2 className="font-bold text-white mb-5">6-Month P&L Trend</h2>
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyPnL}>
+            <LineChart data={memoizedChartData.monthlyPnL}>
               <XAxis dataKey="month" tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#64748B', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v/1000}K`} />
               <Tooltip formatter={(v) => `₹${((v as number)/1000).toFixed(1)}K`} contentStyle={{ background: '#162032', border: '1px solid #1E3A4A', borderRadius: 12, color: '#E2E8F0' }} />
@@ -92,14 +161,14 @@ export default function AdminFinancePage() {
           <h2 className="font-bold text-white mb-4">Revenue Breakdown</h2>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={revenueByCategory} cx="50%" cy="50%" outerRadius={80} paddingAngle={3} dataKey="value">
-                {revenueByCategory.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              <Pie data={memoizedChartData.revenueByCategory} cx="50%" cy="50%" outerRadius={80} paddingAngle={3} dataKey="value">
+                {memoizedChartData.revenueByCategory.map((entry, i: number) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <Tooltip formatter={(v) => `₹${((v as number)/1000).toFixed(1)}K`} contentStyle={{ background: '#162032', border: '1px solid #1E3A4A', borderRadius: 12, color: '#E2E8F0' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-2 mt-1">
-            {revenueByCategory.map(cat => (
+            {memoizedChartData.revenueByCategory.map((cat) => (
               <div key={cat.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ background: cat.color }} />

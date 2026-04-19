@@ -1,21 +1,59 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Star } from 'lucide-react';
-import { products, categories } from '@/lib/mock-data/products';
+import { fetchFromAPI } from '@/lib/api-client';
+import { categories } from '@/lib/mock-data/products';
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popular');
   const [subOnly, setSubOnly] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await fetchFromAPI('/product/catalog');
+        setProducts(data.products || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const search = params.get('search');
+      if (search) {
+        setSearchQuery(search);
+      }
+    }
+  }, []);
 
   const filtered = products
-    .filter(p => activeCategory === 'all' || p.category === activeCategory)
-    .filter(p => !subOnly || p.isSubscriptionEligible)
-    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : b.reviews - a.reviews);
+    .filter((p: any) => activeCategory === 'all' || p.category === activeCategory)
+    .filter((p: any) => !subOnly || p.isSubscriptionEligible)
+    .filter((p: any) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a: any, b: any) => sortBy === 'price-asc' ? a.price - b.price : sortBy === 'price-desc' ? b.price - a.price : b.reviews - a.reviews);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#52B788]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 pt-20 text-center">Failed to load catalog: {error}</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -57,32 +95,35 @@ export default function ProductsPage() {
 
       {/* Product grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {filtered.map(product => (
-          <Link key={product.id} href={`/products/${product.id}`} className="product-card block">
-            <div className="relative h-48 bg-gray-50">
-              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized={product.image.startsWith('http')} />
-              {product.tag && <span className="absolute top-3 left-3 badge badge-success">{product.tag}</span>}
-              {product.isSubscriptionEligible && <span className="sub-tag absolute top-3 right-3">📅 Sub</span>}
-            </div>
-            <div className="p-4">
-              <p className="text-xs mb-1" style={{ color: '#6B7280' }}>{product.farmName} · {product.farmLocation}</p>
-              <h3 className="font-semibold text-sm mb-1" style={{ color: '#1B2D2A' }}>{product.name}</h3>
-              <div className="flex items-center gap-1 mb-3">
-                <Star size={11} fill="#F4A261" stroke="none" />
-                <span className="text-xs font-medium">{product.rating}</span>
-                <span className="text-xs" style={{ color: '#9CA3AF' }}>({product.reviews})</span>
-                <span className="badge badge-organic ml-auto">{product.certification}</span>
+        {filtered.map(product => {
+          const imageSrc = product.image || '/products/placeholder.png';
+          return (
+            <Link key={product.id} href={`/products/${product.id}`} className="product-card block">
+              <div className="relative h-48 bg-gray-50">
+                <Image src={imageSrc} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 25vw" unoptimized />
+                {product.tag && <span className="absolute top-3 left-3 badge badge-success">{product.tag}</span>}
+                {product.isSubscriptionEligible && <span className="sub-tag absolute top-3 right-3">📅 Sub</span>}
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-bold" style={{ color: '#2D6A4F' }}>₹{product.price}</span>
-                  <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>/{product.unit}</span>
+              <div className="p-4">
+                <p className="text-xs mb-1" style={{ color: '#6B7280' }}>{product.farmName} · {product.farmLocation}</p>
+                <h3 className="font-semibold text-sm mb-1" style={{ color: '#1B2D2A' }}>{product.name}</h3>
+                <div className="flex items-center gap-1 mb-3">
+                  <Star size={11} fill="#F4A261" stroke="none" />
+                  <span className="text-xs font-medium">{product.rating}</span>
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>({product.reviews})</span>
+                  <span className="badge badge-organic ml-auto">{product.certification}</span>
                 </div>
-                <button className="btn btn-primary btn-sm" onClick={e => e.preventDefault()}>+ Add</button>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-lg font-bold" style={{ color: '#2D6A4F' }}>₹{product.price}</span>
+                    <span className="text-xs ml-1" style={{ color: '#9CA3AF' }}>/{product.unit}</span>
+                  </div>
+                  <button className="btn btn-primary btn-sm" onClick={e => e.preventDefault()}>+ Add</button>
+                </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
       {filtered.length === 0 && (
         <div className="text-center py-20">

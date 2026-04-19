@@ -105,13 +105,13 @@ export default function AdminDashboard() {
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={revenueByCategory} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                {revenueByCategory.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                {revenueByCategory.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
               </Pie>
               <Tooltip formatter={(v) => `₹${((v as number)/1000).toFixed(1)}K`} contentStyle={{ background: '#162032', border: '1px solid #1E3A4A', borderRadius: 12, color: '#E2E8F0' }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-2 mt-2">
-            {revenueByCategory.map(cat => (
+            {revenueByCategory.map((cat: any) => (
               <div key={cat.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: cat.color }} />
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
         <div className="admin-card">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><AlertTriangle size={16} style={{ color: '#F4A261' }} /> Low Stock ({lowStockAlerts.length})</h3>
           <div className="space-y-3">
-            {lowStockAlerts.map(a => (
+            {lowStockAlerts.map((a: any) => (
               <div key={a.product} className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white">{a.product}</p>
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
         <div className="admin-card">
           <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Clock size={16} style={{ color: '#E63946' }} /> Expiring Soon ({expiringBatches.length})</h3>
           <div className="space-y-3">
-            {expiringBatches.map(b => (
+            {expiringBatches.map((b: any) => (
               <div key={b.batch} className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-white">{b.product}</p>

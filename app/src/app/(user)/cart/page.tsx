@@ -19,6 +19,7 @@ export default function CartPage() {
   const [showSubModal, setShowSubModal] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [couponError, setCouponError] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -32,12 +33,14 @@ export default function CartPage() {
   const handleApplyCoupon = () => {
     if (coupon === 'WELCOME5') {
        setAppliedCoupon({code: 'WELCOME5', discountPct: 0.05});
+       setCouponError('');
        setShowSubModal(true);
     } else if (coupon === 'ORGANIC10') {
        setAppliedCoupon({code: 'ORGANIC10', discountPct: 0.10});
+       setCouponError('');
        setShowSubModal(true);
     } else {
-       alert("Invalid or expired coupon code");
+       setCouponError("Invalid or expired coupon code");
     }
   };
 
@@ -64,7 +67,7 @@ export default function CartPage() {
             {cart.map(({ product, qty }) => (
               <div key={product.id} className="bg-white rounded-2xl p-5 flex gap-4" style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
                 <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-50">
-                  <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized={product.image.startsWith('http')} />
+                  <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs" style={{ color: '#6B7280' }}>{product.farmName}</p>
@@ -106,6 +109,7 @@ export default function CartPage() {
                 </div>
                 <button id="apply-coupon-btn" onClick={handleApplyCoupon} className="btn btn-outline btn-sm">Apply</button>
               </div>
+              {couponError && <p className="text-xs mb-3 text-red-500">{couponError}</p>}
               {appliedCoupon && <p className="text-xs mb-3" style={{ color: '#52B788' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.discountPct * 100}% off!</p>}
 
               {/* Price breakdown */}

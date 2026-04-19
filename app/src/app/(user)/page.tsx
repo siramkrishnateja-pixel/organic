@@ -1,11 +1,16 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Shield, Leaf, Truck, Star, ChevronRight, CheckCircle } from 'lucide-react';
-import { products, categories } from '@/lib/mock-data/products';
+import { fetchFromAPI } from '@/lib/api-client';
 
-const featuredProducts = products.slice(0, 6);
+const categories = [
+  { id: 'all', name: 'All Products', icon: '🛒' },
+  { id: 'dairy', name: 'Milk & Dairy', icon: '🥛' },
+  { id: 'vegetables', name: 'Vegetables', icon: '🥕' },
+  { id: 'oils', name: 'Organic Oils', icon: '🫒' }
+];
 
 const trustPoints = [
   { icon: '🌿', title: 'Certified Organic', desc: 'NPOP & India Organic certified farms' },
@@ -16,7 +21,54 @@ const trustPoints = [
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState('all');
-  const filtered = activeCategory === 'all' ? featuredProducts : featuredProducts.filter(p => p.category === activeCategory);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await fetchFromAPI('/product/catalog');
+        if (data.status === 'success') {
+          setProducts(data.products || []);
+        } else {
+          setError('Failed to load products');
+        }
+      } catch (err) {
+        setError('Failed to load products');
+        console.error('Error fetching products:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const featuredProducts = products.slice(0, 6);
+  const filtered = activeCategory === 'all' ? featuredProducts : featuredProducts.filter(p => p.category.toLowerCase().includes(activeCategory));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading fresh products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p className="text-lg font-semibold mb-2">Unable to load products</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -84,7 +136,7 @@ export default function HomePage() {
               className={`card-lift p-6 rounded-2xl text-center cursor-pointer animate-fadeInUp delay-${(i+1)*100}`}
               style={{ background: 'white', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '2px solid transparent' }}>
               <div className="text-4xl mb-3">{cat.icon}</div>
-              <p className="font-semibold text-sm" style={{ color: '#1B2D2A' }}>{cat.label}</p>
+              <p className="font-semibold text-sm" style={{ color: '#1B2D2A' }}>{cat.name}</p>
               <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
                 {products.filter(p => p.category === cat.id).length} products
               </p>
@@ -111,7 +163,7 @@ export default function HomePage() {
             <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
               className={`btn btn-sm shrink-0 ${activeCategory === cat.id ? 'btn-primary' : 'btn-outline'}`}
               style={{ borderRadius: '999px', fontSize: '0.8rem' }}>
-              {cat.icon} {cat.label}
+              {cat.icon} {cat.name}
             </button>
           ))}
         </div>
@@ -120,21 +172,16 @@ export default function HomePage() {
           {filtered.map((product, i) => (
             <Link key={product.id} href={`/products/${product.id}`} className={`product-card block animate-fadeInUp delay-${(i % 3 + 1) * 100}`}>
               <div className="relative h-52 bg-gray-50">
-                <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized={product.image.startsWith('http')} />
-                {product.tag && (
-                  <span className="absolute top-3 left-3 badge badge-success">{product.tag}</span>
-                )}
-                {product.isSubscriptionEligible && (
-                  <span className="sub-tag absolute top-3 right-3">Subscribe</span>
-                )}
+                <Image src={product.image_url || '/products/placeholder.png'} alt={product.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
+                <span className="sub-tag absolute top-3 right-3">Subscribe</span>
               </div>
               <div className="p-4">
-                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{product.farmName}</p>
+                <p className="text-xs font-medium mb-1" style={{ color: '#6B7280' }}>{product.farm_info}</p>
                 <h3 className="font-semibold text-base mb-1" style={{ color: '#1B2D2A' }}>{product.name}</h3>
                 <div className="flex items-center gap-1 mb-3">
                   <Star size={12} fill="#F4A261" stroke="none" />
-                  <span className="text-xs font-medium">{product.rating}</span>
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>({product.reviews})</span>
+                  <span className="text-xs font-medium">4.5</span>
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>(0)</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
