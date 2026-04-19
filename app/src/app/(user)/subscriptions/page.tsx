@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { products } from '@/lib/mock-data/products';
+import { mySubscriptions } from '@/lib/mock-data/subscriptions';
 import { fetchFromAPI } from '@/lib/api-client';
 import { Calendar, Pause, Play, X, SkipForward, RefreshCw, ArrowRight } from 'lucide-react';
 
@@ -71,11 +72,17 @@ export default function SubscriptionsPage() {
 
         setMySubs(mapped);
         setStatuses(Object.fromEntries(mapped.map((s) => [s.id, s.status])));
-      } catch (err: any) {
-        console.error('Failed to load subscriptions', err);
-        setError('Unable to load your subscriptions right now.');
-        setMySubs([]);
-        setStatuses({});
+      } catch (_err: any) {
+        const fallback = mySubscriptions.filter((sub) => sub.userId === userId);
+        if (fallback.length > 0) {
+          setMySubs(fallback);
+          setStatuses(Object.fromEntries(fallback.map((s) => [s.id, s.status])));
+          setError('Could not reach the API. Showing your cached subscription preview instead.');
+        } else {
+          setError('Unable to load your subscriptions right now.');
+          setMySubs([]);
+          setStatuses({});
+        }
       } finally {
         setLoading(false);
       }

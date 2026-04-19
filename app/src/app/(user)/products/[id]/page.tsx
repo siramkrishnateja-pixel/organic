@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { fetchFromAPI } from '@/lib/api-client';
 import { Star, MapPin, Shield, ChevronLeft, Minus, Plus, Calendar, Zap } from 'lucide-react';
 import { use } from 'react';
+import { products as mockProducts } from '@/lib/mock-data/products';
 import Link from 'next/link';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const [qty, setQty] = useState(1);
   const [mode, setMode] = useState<'buy' | 'subscribe'>('buy');
@@ -22,8 +24,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       try {
         const data = await fetchFromAPI(`/product/catalog/${unwrappedParams.id}`);
         setProduct(data.product);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (_err: any) {
+        const fallback = mockProducts.find((item) => item.id === unwrappedParams.id);
+        if (fallback) {
+          setProduct(fallback);
+          setWarning('Unable to reach the product API. Showing offline product data.');
+          setError(null);
+        } else {
+          setError('Unable to reach the product API or find the item offline.');
+        }
       } finally {
         setLoading(false);
       }
@@ -41,7 +50,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  if (error || !product) {
+  if (error || (!product && !warning)) {
     return <div className="text-red-500 pt-20 text-center">Failed to load product: {error}</div>;
   }
 
@@ -51,6 +60,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <ChevronLeft size={16} /> Back to Products
       </Link>
 
+      {warning && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {warning}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {/* Image */}
         <div>

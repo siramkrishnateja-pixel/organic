@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Star } from 'lucide-react';
 import { fetchFromAPI } from '@/lib/api-client';
-import { categories } from '@/lib/mock-data/products';
+import { categories, products as mockProducts } from '@/lib/mock-data/products';
 
 export default function ProductsPage() {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -14,14 +14,17 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProducts() {
       try {
         const data = await fetchFromAPI('/product/catalog');
         setProducts(data.products || []);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (_err: any) {
+        setProducts(mockProducts);
+        setWarning('Unable to reach the catalog API. Showing offline product mock data.');
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -51,7 +54,7 @@ export default function ProductsPage() {
     );
   }
 
-  if (error) {
+  if (error && products.length === 0) {
     return <div className="text-red-500 pt-20 text-center">Failed to load catalog: {error}</div>;
   }
 
@@ -79,6 +82,11 @@ export default function ProductsPage() {
         </button>
       </div>
 
+      {warning && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {warning}
+        </div>
+      )}
       {/* Category Tabs */}
       <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
         {categories.map(cat => (
